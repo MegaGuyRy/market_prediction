@@ -10,10 +10,10 @@ Containerization: Docker - easy automation using docker images
 trading platform: Alpaca API
 
 Design:
-*Data: ~100 Tickers, for each 10 years of historical data
-  *train on last 10 years
-  *validate on last 6 months
-  *test on last 6–12 months (walk-forward)
+* Data: ~100 Tickers, for each 10 years of historical data
+  * train on last 10 years
+  * validate on last 6 months
+  * test on last 6–12 months (walk-forward)
 
 
 -Store data in Postres
