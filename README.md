@@ -1,4 +1,4 @@
-# 🧠 News-First RAG + XGBoost + Multi-Agent Trading System  
+# News-First RAG + XGBoost + Multi-Agent Trading System  
 (PostgreSQL · pgvector · Alpaca · Ollama · Docker)
 
 ---
