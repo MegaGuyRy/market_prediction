@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: stock_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stockdb
+      POSTGRES_USER: stock
+      POSTGRES_PASSWORD: stock
+      TZ: America/New_York
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stock -d stockdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://stock:stock@postgres:5432/stockdb
+      TZ: America/New_York
+    volumes:
+      - .:/app
+    command: ["python"]
+
+volumes:
+  pgdata:
