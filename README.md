@@ -118,3 +118,33 @@ E5 --> F1 --> F2 --> G1 --> G2
 F2 -. monitored by .-> H1
 F2 -. monitored by .-> H2
 F2 -. monitored by .-> H3
+```
+Tech Stack
+Core
+* Python – orchestration, features, ML, policy, execution
+
+* PostgreSQL – system of record
+
+* pgvector – vector search for news RAG
+
+* XGBoost – primary ML signal engine
+
+* Alpaca API – paper / live execution
+
+Local AI
+
+* Ollama – local LLM runtime
+
+* News & sentiment summarization
+
+* Analyst / Bull / Bear / Risk / Committee agents
+
+Deployment
+
+* Docker + Docker Compose
+
+* reproducible runs
+
+* easy migration to a home server
+
+* clean separation of services
