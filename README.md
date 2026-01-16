@@ -119,7 +119,8 @@ F2 -. monitored by .-> H1
 F2 -. monitored by .-> H2
 F2 -. monitored by .-> H3
 ```
-Tech Stack
+---
+#### Tech Stack
 Core
 * Python – orchestration, features, ML, policy, execution
 
@@ -148,3 +149,85 @@ Deployment
 * easy migration to a home server
 
 * clean separation of services
+
+---
+#### Dockerized Runtime Architecture
+
+* postgres
+  * OHLCV bars
+  * features
+  * news + embeddings (pgvector)
+  * signals, agent reports, decisions, trades
+
+* ollama
+  * local LLMs for agents & sentiment
+
+* app
+  * Python trading orchestrator
+
+* scheduler (optional)
+  * triggers twice-daily runs
+
+---
+#### Candidate Selection Policy (Summary)
+
+A ticker is analyzed if any of the following apply:
+1. News-Driven
+   * earnings, guidance, legal/regulatory, M&A, analyst actions
+   * high novelty or sentiment magnitude
+
+2. Market-Driven
+    * large gaps
+    * abnormal volume or volatility
+    * breakouts / breakdowns
+
+3. Portfolio-Driven (mandatory)
+    * all open positions
+    * positions near stops or exits
+
+4. Baseline Coverage
+    * rotating subset of blue-chip stocks to avoid blind spots
+    * Candidate selection decides what gets analyzed, not what gets traded.
+
+---
+#### ML Signal Engine (LSTM or XGBoost)
+* Evaluates candidate tickers only
+* Outputs:
+  * BUY / SELL / HOLD
+  * confidence / expected return
+  * edge score
+* ML is the only component allowed to propose new trades
+---
+#### Multi-Agent Critique (Local LLMs)
+Agents do not generate trades.
+They:
+* critique ML proposals
+* evaluate news evidence
+* identify risk and blind spots
+Agents:
+* Market Analyst (regime / anomaly)
+* Bull (best-case thesis)
+* Bear (counter-thesis)
+* Risk Manager (event & exposure risk)
+* Committee (final proposal)
+Agents may reduce or veto trades — never increase exposure.
+---
+Portfolio & Risk Controller (Hard Rules)
+Final authority (pure code):
+* risk-per-trade sizing
+* max position size per stock
+* max portfolio exposure
+* drawdown-based de-risking
+* optional volatility targeting
+LLMs cannot override this layer.
+---
+Position Lifecycle
+Scheduled (Twice Daily)
+* enter new positions
+* reduce / exit existing positions
+* update stops and targets
+Intraday (Always On, No Agents)
+* stop-loss execution
+* drawdown enforcement
+
+gap / volatility emergency rules
