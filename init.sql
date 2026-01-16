@@ -1,3 +1,4 @@
+-- SQL script to initialize the database schema for storing daily price bars
 -- Daily price bars (source of truth)
 CREATE TABLE IF NOT EXISTS price_bars_daily (
   symbol      TEXT NOT NULL,
