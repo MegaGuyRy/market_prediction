@@ -1,0 +1,142 @@
+# LLM Agent Configuration
+
+# Agent System Settings
+system:
+  enabled: true
+  timeout_seconds: 60
+  max_retries: 2
+  default_on_error: "VETO"  # Conservative fallback
+
+# Agent Role Definitions
+agents:
+  analyst:
+    name: "Market Analyst"
+    role: "Assess overall market regime and context"
+    prompt_template: |
+      You are a market analyst reviewing a trading signal.
+      
+      Signal: {signal} {ticker} with {confidence}% confidence
+      Current market context: {market_context}
+      Recent news: {news_summary}
+      
+      Assess:
+      1. Does this signal align with current market regime?
+      2. Are there macro factors that support or contradict this signal?
+      3. What is the overall market sentiment?
+      
+      Respond in JSON:
+      {
+        "assessment": "bullish|neutral|bearish",
+        "rationale": "Brief explanation",
+        "concern_level": 0-10
+      }
+
+  bull:
+    name: "Bull Case Advocate"
+    role: "Construct best-case thesis"
+    prompt_template: |
+      You are building the bull case for this trade.
+      
+      Signal: {signal} {ticker} with {confidence}% confidence
+      Recent news: {news_summary}
+      Technical setup: {technical_summary}
+      
+      Build the bull case:
+      1. What are the strongest arguments FOR this trade?
+      2. What catalysts could drive upside?
+      3. What's the best-case scenario?
+      
+      Respond in JSON:
+      {
+        "thesis": "Bull case summary",
+        "catalysts": ["catalyst1", "catalyst2"],
+        "upside_estimate": "percentage",
+        "conviction": 0-10
+      }
+
+  bear:
+    name: "Bear Case Advocate"
+    role: "Identify risks and counter-arguments"
+    prompt_template: |
+      You are the devil's advocate for this trade.
+      
+      Signal: {signal} {ticker} with {confidence}% confidence
+      Recent news: {news_summary}
+      Technical setup: {technical_summary}
+      
+      Challenge the trade:
+      1. What are the strongest arguments AGAINST this trade?
+      2. What risks could cause losses?
+      3. What's the worst-case scenario?
+      
+      Respond in JSON:
+      {
+        "thesis": "Bear case summary",
+        "risks": ["risk1", "risk2"],
+        "downside_estimate": "percentage",
+        "conviction": 0-10
+      }
+
+  risk:
+    name: "Risk Manager"
+    role: "Evaluate exposure and portfolio impact"
+    prompt_template: |
+      You are a risk manager reviewing portfolio impact.
+      
+      Signal: {signal} {ticker} with {confidence}% confidence
+      Current portfolio: {portfolio_summary}
+      Proposed position size: {position_size}
+      
+      Evaluate:
+      1. Does this trade fit within portfolio constraints?
+      2. Are we overexposed to this sector/ticker?
+      3. What's the correlation with existing positions?
+      
+      Respond in JSON:
+      {
+        "exposure_assessment": "low|medium|high",
+        "sector_concentration": "percentage",
+        "recommendation": "APPROVE|REDUCE|VETO",
+        "rationale": "Brief explanation"
+      }
+
+  committee:
+    name: "Investment Committee"
+    role: "Synthesize all inputs and make final decision"
+    prompt_template: |
+      You are the investment committee making the final decision.
+      
+      Signal: {signal} {ticker} with {confidence}% confidence
+      
+      Inputs:
+      - Analyst: {analyst_assessment}
+      - Bull case: {bull_thesis}
+      - Bear case: {bear_thesis}
+      - Risk manager: {risk_assessment}
+      
+      Make final decision:
+      1. Weigh all perspectives
+      2. Consider risk/reward
+      3. Make a binary decision: APPROVE, VETO, or REDUCE
+      
+      Respond in JSON:
+      {
+        "decision": "APPROVE|VETO|REDUCE",
+        "confidence": 0-10,
+        "rationale": "Synthesis of all inputs",
+        "size_adjustment": "1.0 for full size, 0.5 for half, etc"
+      }
+
+# Agent Execution Order
+execution_order:
+  - "analyst"
+  - "bull"
+  - "bear"
+  - "risk"
+  - "committee"
+
+# Voting Rules
+voting:
+  veto_weight: 1.0  # Any agent can veto
+  reduce_threshold: 2  # 2+ agents recommend reduce → reduce
+  unanimous_required: false  # Committee has final say

@@ -28,6 +28,7 @@ This document locks all major architectural and operational decisions for v1. De
 |----------|---------|
 | ✅ **Primary** | Alpaca API (paper trading) |
 | ✅ **Secondary** | Yahoo Finance (backup OHLCV) |
+| ⏭️ **Later** | Fear and Greed index |
 | **Training Data** | Yahoo Finance (historical) |
 | **Rationale** | Alpaca is integrated for execution. Yahoo is cheap and reliable for history. |
 
@@ -287,10 +288,25 @@ Audit Logging
 | Slack/email alerts | Logs sufficient for v1; add if needed |
 | Live trading | After 4+ weeks of stable paper trading |
 | Options / derivatives | Out of scope for equity system |
+| PDT multi-account strategy | Requires $50K+ capital; evaluate after v1 validation |
+| Crypto day trading | Add when crypto data integrated (v1.1+) |
 
 ---
 
-## 11. Success Metrics (v1)
+## 11. Pattern Day Trader (PDT) Compliance
+
+| Decision | Details |
+|----------|---------|
+| ✅ **v1 Strategy** | "Avoid" – no same-day round-trip trades |
+| ✅ **Min hold** | At least 1 full business day before exit |
+| ✅ **Crypto** | Not subject to PDT; allowed for future crypto signals |
+| ⏭️ **Multi-account** | Track day trade counts per account (v1.1+) |
+| ⏭️ **Hold-swing** | Formalize minimum hold windows (v1.1+) |
+| **Rationale** | Most conservative approach prevents PDT flag entirely. Aligns with swing-trading philosophy. Allows later pivot to more active strategies if capital >$25K. See [PDT_RULES.md](PDT_RULES.md) for 4 strategies & implementation details. |
+
+---
+
+## 12. Success Metrics (v1)
 
 - [ ] Full daily runs execute without errors (99%+ uptime)
 - [ ] Audit logs are complete and traceable
@@ -298,6 +314,7 @@ Audit Logging
 - [ ] Paper trading: 4 weeks, no drawdown breach, consistent execution
 - [ ] Agent system provides meaningful critiques (logged for review)
 - [ ] Risk controller successfully enforces all constraints
+- [ ] Zero PDT violations (all positions held ≥1 business day before exit)
 
 ---
 
@@ -305,5 +322,6 @@ Audit Logging
 
 - **Designed by:** Ryan
 - **Locked:** January 16, 2026
+- **PDT Rules Added:** January 20, 2026
 - **Next review:** After 4-week paper trading validation
 

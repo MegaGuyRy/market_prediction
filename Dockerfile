@@ -1,26 +1,28 @@
 FROM python:3.11-slim
 
-# System deps
-RUN apt-get update && apt-get install -y \
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Set workdir
 WORKDIR /app
 
-# Install Python deps
 COPY requirements.txt .
 RUN python -m pip install --upgrade pip && \
-    python -m pip install --no-cache-dir -r requirements.txt && \
-    python -m pip show pandas
+    python -m pip install --no-cache-dir -r requirements.txt
 
+# Copy source and configs
+COPY src ./src
+COPY docs ./docs
+COPY config ./config
+COPY db ./db
+COPY tests ./tests
 
-# Copy code
-COPY pipeline ./pipeline
-COPY configs ./configs
-
-# Default command (override in docker compose run)
-CMD ["python"]
+# Keep container alive for interactive dev; override in compose if needed
+CMD ["sleep", "infinity"]
 
 

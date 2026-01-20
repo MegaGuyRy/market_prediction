@@ -1,0 +1,148 @@
+# Risk Controller Rules
+
+# Position Sizing
+sizing:
+  base_risk_pct: 0.5  # % of account per trade
+  confidence_scaling: true  # Scale size by ML confidence
+  min_confidence: 0.6  # Don't trade below 60% confidence
+  max_confidence: 0.95  # Cap at 95% confidence
+  min_position_size: 1  # Minimum 1 share
+  max_position_size: 1000  # Maximum 1000 shares per trade
+
+# Portfolio Constraints
+constraints:
+  max_positions: 15
+  max_single_stock_pct: 10.0  # % of total portfolio
+  max_sector_pct: 30.0  # % of total portfolio
+  max_exposure_pct: 100.0  # Total % invested
+  cash_reserve_pct: 0.0  # Minimum cash (0 = fully invested allowed)
+
+# Stop Loss & Targets
+stops:
+  method: "atr"  # atr, percentage, fixed
+  atr_multiple: 2.0  # Stop = entry - (2 * ATR)
+  atr_period: 14  # 14-day ATR
+  min_stop_pct: 1.0  # Minimum 1% stop
+  max_stop_pct: 5.0  # Maximum 5% stop
+  
+targets:
+  method: "atr"
+  atr_multiple: 3.0  # Target = entry + (3 * ATR)
+  min_target_pct: 2.0  # Minimum 2% target
+  reward_risk_ratio: 1.5  # Minimum 1.5:1 reward/risk
+
+# Drawdown Rules
+drawdown:
+  soft_limit_pct: 2.0  # Alert at 2% daily drawdown
+  hard_limit_pct: 3.0  # Emergency at 3% daily drawdown
+  deleverage_pct: 50.0  # Cut positions by 50% at hard limit
+  halt_new_trades: true  # Stop new entries at hard limit
+  recovery_threshold_pct: 1.5  # Resume at <1.5% drawdown
+
+# Emergency Rules (Intraday)
+emergency:
+  gap_limit_pct: 5.0  # Close position if gaps >5% against us
+  volatility_spike_multiple: 3.0  # Close if ATR spikes >3x average
+  rapid_loss_pct: 2.0  # Close if loses >2% in <5 min
+  
+  # Halt conditions
+  halt_on_market_crash: true  # Stop trading if SPY down >5% intraday
+  halt_on_tech_failure: true  # Stop if data/API fails
+  halt_on_error_rate: 0.1  # Stop if >10% error rate
+
+# Correlation Rules
+correlation:
+  max_correlation: 0.7  # Don't add positions with >0.7 correlation
+  lookback_days: 60  # Calculate correlation over 60 days
+  check_sectors: true  # Apply to sector concentration
+
+# Diversification
+diversification:
+  min_sectors: 3  # Require at least 3 different sectors
+  max_same_sector: 5  # Max 5 positions in same sector
+  sector_definitions:
+    tech: ["AAPL", "MSFT", "GOOGL", "META", "NVDA"]
+    finance: ["JPM", "BAC", "GS", "MS", "WFC"]
+    healthcare: ["UNH", "JNJ", "PFE", "ABBV", "TMO"]
+    consumer: ["AMZN", "TSLA", "HD", "NKE", "SBUX"]
+    # ... add more
+
+# Time-based Rules
+timing:
+  no_trade_first_5_min: true  # Avoid first 5 min of market
+  no_trade_last_5_min: true  # Avoid last 5 min of market
+  avoid_fomc_days: false  # Trade on FOMC days (v1.1+)
+  avoid_earnings_day: false  # Trade on earnings (v1.1+)
+
+# Order Rules
+orders:
+  order_type: "market"  # market, limit
+  limit_order_offset_pct: 0.1  # Limit = market_price +/- 0.1%
+  max_order_retries: 3
+  order_timeout_seconds: 60
+  partial_fills_allowed: true
+  min_fill_pct: 80  # Accept if >80% filled
+
+# Validation Rules
+validation:
+  check_liquidity: true  # Verify volume > 1M shares/day
+  min_price: 5.0  # Don't trade stocks <$5
+  max_price: 1000.0  # Don't trade stocks >$1000
+  check_halts: true  # Verify not halted
+  check_market_open: true  # Verify market is open
+
+# Pattern Day Trader (PDT) Rules
+# FINRA Rule 4520: Account flagged as PDT if 4+ day trades in 5 business days
+# AND day trades represent >6% of total trades in same 5-day window
+pdt:
+  enabled: true
+  strategy: "avoid"  # Options: avoid, hold_swing, multi_account, crypto_hybrid
+  
+  # Strategy: avoid
+  # Never execute same-day round-trips (most conservative, v1 recommended)
+  avoid:
+    enforce_no_same_day_exit: true
+    alert_on_same_day_entry: true
+    
+  # Strategy: hold_swing (v1.1+)
+  # Hold every position minimum 1 business day before exit
+  hold_swing:
+    min_hold_days: 1
+    max_hold_days: 20
+    
+  # Strategy: multi_account (v1.1+)
+  # Spread trading across 2+ accounts to distribute day trades
+  multi_account:
+    enabled: false
+    accounts:
+      - account_id: "paper1"
+        max_day_trades_per_5d: 3
+      - account_id: "paper2"
+        max_day_trades_per_5d: 3
+        
+  # Strategy: crypto_hybrid (v1.1+)
+  # Day trade crypto freely, swing trade equities
+  crypto_hybrid:
+    enabled: false
+    crypto_tickers: []  # e.g., ["BTC", "ETH"]
+    allow_same_day_crypto: true
+    force_hold_equities: true
+    
+  # Day trade tracking (all strategies)
+  tracking:
+    lookback_window_days: 5  # Rolling 5-business-day window
+    alert_threshold: 3  # Alert when 3 day trades in 5 days
+    halt_threshold: 4  # Halt new trades at 4 day trades in 5 days
+    
+  # PDT flag consequences
+  flag_consequences:
+    min_account_balance: 25000  # $25K minimum
+    margin_multiplier: 4.0  # 4x buying power
+    halt_trading: true  # Stop all trading if flagged
+    
+  # Minimum equity requirement
+  minimum_equity:
+    required: 25000
+    check_on_startup: true
+    check_daily: true
+    halt_if_breached: true

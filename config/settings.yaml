@@ -1,0 +1,89 @@
+# System Settings
+
+# Trading Universe
+universe:
+  type: "s&p_100"
+  size: 100
+  min_market_cap: 10_000_000_000  # $10B
+  min_avg_volume: 1_000_000  # 1M shares/day
+
+# Trading Schedule (Eastern Time)
+schedule:
+  morning_run: "09:35"  # 5 min after market open
+  afternoon_run: "15:45"  # 15 min before close
+  intraday_check_interval: 30  # minutes
+  timezone: "America/New_York"
+
+# Trading Hours
+market:
+  open_time: "09:30"
+  close_time: "16:00"
+  timezone: "America/New_York"
+
+# Portfolio Constraints
+portfolio:
+  max_positions: 15
+  max_single_stock_pct: 10.0  # % of total account
+  max_exposure_pct: 100.0  # % of account in positions
+  starting_cash: 100000.0
+
+# Risk Parameters
+risk:
+  risk_per_trade_pct: 0.5  # % of account risked per trade
+  soft_drawdown_limit_pct: 2.0  # Alert threshold
+  hard_drawdown_limit_pct: 3.0  # Emergency de-risk
+  emergency_deleverage_pct: 50.0  # Reduce positions by 50%
+  stop_loss_atr_multiple: 2.0  # Stop = entry - (2 * ATR)
+  profit_target_atr_multiple: 3.0  # Target = entry + (3 * ATR)
+
+# Data Sources
+data:
+  primary_ohlcv: "alpaca"
+  backup_ohlcv: "yahoo"
+  lookback_days: 365  # Historical data for features
+  news_sources:
+    - "https://finance.yahoo.com/rss/"
+    - "https://www.sec.gov/cgi-bin/browse-edgar"
+    - "https://www.reuters.com/markets/us/"
+
+# Database
+database:
+  host: "postgres"
+  port: 5432
+  name: "marketdb"
+  user: "market"
+  password: "market"
+  pool_size: 10
+  pool_timeout: 30
+
+# LLM Settings
+llm:
+  base_url: "http://ollama:11434"
+  model: "mistral"
+  temperature: 0.7
+  max_tokens: 1000
+  timeout: 30
+
+# Feature Engineering
+features:
+  technical_indicators:
+    - "rsi"
+    - "macd"
+    - "bollinger_bands"
+    - "atr"
+    - "momentum"
+    - "volume_sma"
+  lookback_periods:
+    - 5
+    - 10
+    - 20
+    - 50
+  sentiment_weight: 0.3
+
+# Logging
+logging:
+  level: "INFO"
+  format: "json"
+  file: "logs/market_trader.log"
+  max_size_mb: 100
+  backup_count: 10
