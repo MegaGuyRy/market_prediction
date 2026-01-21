@@ -48,7 +48,7 @@ def test_database_connection():
             if ext:
                 print(f"[DONE] pgvector extension: {ext[1]}")
             else:
-                print(f"⚠️  pgvector extension not found")
+                print(f"  pgvector extension not found")
             
             # Count tables
             result = conn.execute(text(
@@ -64,7 +64,7 @@ def test_database_connection():
                 print(f"[DONE] Rows in ohlcv table: {row_count:,}")
             except Exception:
                 # Table might be empty
-                print(f"⚠️  ohlcv table is empty or doesn't exist yet")
+                print(f"  ohlcv table is empty or doesn't exist yet")
             
         return True
     except Exception as e:
@@ -196,10 +196,10 @@ def main():
     print(f"\nTotal: {passed}/{total} tests passed")
     
     if passed == total:
-        print("\n🎉 All integration tests passed! Phase 1 infrastructure is ready.")
+        print("\n All integration tests passed! Phase 1 infrastructure is ready.")
         return 0
     else:
-        print(f"\n⚠️  {total - passed} test(s) failed. Please review errors above.")
+        print(f"\n  {total - passed} test(s) failed. Please review errors above.")
         return 1
 
 
