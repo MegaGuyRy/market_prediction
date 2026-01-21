@@ -15,8 +15,7 @@
 - All components can communicate
 
 ### Deliverables
-- [ ] `docker-compose.yml` with all services
-- [ ] `schema.sql` with all tables
+- [D] `schema.sql` with all tables
 - [ ] Ollama model loaded and tested
 - [ ] Config files (settings.yaml, models.yaml, agents.yaml, risk_rules.yaml)
 - [ ] Database connection pool working

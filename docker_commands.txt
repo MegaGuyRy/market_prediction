@@ -1,0 +1,32 @@
+# Start all services (postgres + app if configured)
+sudo docker compose up -d {name}
+
+# Or start just postgres
+sudo docker compose up -d postgres
+
+# Check if containers are running
+sudo docker ps -a
+or
+sudo docker compose ps
+
+# View logs
+sudo docker compose logs -f
+
+# Stop all services
+sudo docker compose down
+
+# Full Run
+cd /home/mip/Desktop/market_prediction/market_prediction
+sudo docker compose build app
+sudo docker compose up -d
+
+# Pull Model
+sudo docker compose exec ollama ollama pull mistral
+
+# Health checks:
+sudo docker compose ps       # see healthy/unhealthy
+sudo docker compose logs -f ollama
+sudo docker compose logs -f app
+
+# Enter container
+docker exec -it <container-name-or-id> /bin/bash

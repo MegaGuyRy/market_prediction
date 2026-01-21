@@ -6,19 +6,21 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
+    postgresql-client \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# Copy and install requirements FIRST (cached layer)
 COPY requirements.txt .
 RUN python -m pip install --upgrade pip && \
     python -m pip install --no-cache-dir -r requirements.txt
 
-# Copy source and configs
+# Copy application code AFTER (won't invalidate pip cache if only code changes)
 COPY src ./src
-COPY docs ./docs
 COPY config ./config
+COPY scripts ./scripts
 COPY db ./db
 COPY tests ./tests
 

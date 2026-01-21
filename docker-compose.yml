@@ -28,7 +28,7 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      test: ["CMD", "ollama", "list"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -43,14 +43,23 @@ services:
       postgres:
         condition: service_healthy
       ollama:
-        condition: service_started
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql+psycopg2://market:market@postgres:5432/marketdb
       OLLAMA_BASE_URL: http://ollama:11434
       TZ: America/New_York
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: market
+      PGDATABASE: marketdb
     volumes:
       - .:/app
     command: ["sleep", "infinity"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h ${PGHOST:-postgres} -p ${PGPORT:-5432} -U ${PGUSER:-market} -d ${PGDATABASE:-marketdb}"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:
