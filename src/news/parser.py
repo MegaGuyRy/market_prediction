@@ -266,3 +266,100 @@ def score_novelty(headline: str, embedding: np.ndarray,
     """Convenience function to score novelty."""
     parser = NewsParser()
     return parser.score_novelty(headline, embedding, existing_embeddings)
+
+
+if __name__ == "__main__":
+    # Test script
+    print("="*60)
+    print("NEWS PARSER TEST")
+    print("="*60)
+    
+    # Initialize parser (use heuristics to avoid Ollama dependency)
+    parser = NewsParser(use_ollama=True)
+    
+    # Test sentiment extraction
+    print("\n1. SENTIMENT EXTRACTION TEST")
+    print("-"*60)
+    
+    test_cases = [
+        ("Apple beats earnings with record iPhone sales", "Expected: Positive"),
+        ("Tesla stock crashes after missing delivery targets", "Expected: Negative"),
+        ("Microsoft announces partnership with OpenAI", "Expected: Positive"),
+        ("Company faces lawsuit over regulatory violations", "Expected: Negative"),
+        ("Stock price remains unchanged", "Expected: Neutral"),
+    ]
+    
+    for text, expected in test_cases:
+        sentiment = parser.extract_sentiment(text, use_llm=False)
+        emoji = "📈" if sentiment > 0.2 else "📉" if sentiment < -0.2 else "➡️"
+        print(f"{emoji} {sentiment:+.2f} | {text}")
+        print(f"   {expected}")
+    
+    # Test novelty scoring with embeddings
+    print("\n2. NOVELTY SCORING TEST")
+    print("-"*60)
+    
+    from embedder import NewsEmbedder
+    embedder = NewsEmbedder()
+    
+    # Create some existing news embeddings (simulate historical news)
+    existing_headlines = [
+        "Apple releases new iPhone with better camera",
+        "Apple announces iPhone 15 with improved battery",
+    ]
+    existing_embeddings = [embedder.embed_text(h) for h in existing_headlines]
+    
+    # Test novelty of new headlines
+    test_novelty = [
+        ("Apple unveils iPhone 16 with enhanced features", "Similar to existing"),
+        ("Tesla announces new Cybertruck production milestone", "Different topic"),
+        ("Apple iPhone gets minor software update", "Very similar"),
+    ]
+    
+    for headline, note in test_novelty:
+        embedding = embedder.embed_text(headline)
+        novelty = parser.score_novelty(headline, embedding, existing_embeddings)
+        emoji = "🆕" if novelty > 0.7 else "🔄" if novelty > 0.4 else "📰"
+        print(f"{emoji} Novelty: {novelty:.2f} | {headline}")
+        print(f"   {note}")
+    
+    # Test full news item parsing
+    print("\n3. FULL NEWS ITEM PARSING")
+    print("-"*60)
+    
+    news_items = [
+        {
+            "headline": "Apple beats Q4 earnings expectations",
+            "content": "Apple Inc reported strong earnings with record iPhone sales.",
+            "source": "Financial Times",
+            "url": "https://example.com/apple-earnings",
+        },
+        {
+            "headline": "Tech stocks plunge on regulatory concerns",
+            "content": "Major tech companies face new regulatory scrutiny.",
+            "source": "Reuters",
+            "url": "https://example.com/tech-regulation",
+        }
+    ]
+    
+    # Add embeddings to items
+    from embedder import NewsEmbedder
+    embedder = NewsEmbedder()
+    for item in news_items:
+        combined = f"{item['headline']} {item['content']}"
+        item['embedding'] = embedder.embed_text(combined)
+    
+    # Parse items
+    parsed_items = parser.batch_parse_news(news_items, existing_embeddings)
+    
+    for item in parsed_items:
+        print(f"\nHeadline: {item['headline']}")
+        print(f"Source: {item['source']}")
+        sentiment_label = "Bullish" if item['sentiment_score'] > 0.2 else "Bearish" if item['sentiment_score'] < -0.2 else "Neutral"
+        novelty_label = "Novel" if item['novelty_score'] > 0.7 else "Familiar" if item['novelty_score'] < 0.4 else "Moderate"
+        print(f"Sentiment: {item['sentiment_score']:+.2f} ({sentiment_label})")
+        print(f"Novelty: {item['novelty_score']:.2f} ({novelty_label})")
+    
+    print("\n" + "="*60)
+    print("TEST COMPLETE")
+    print("="*60)
