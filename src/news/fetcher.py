@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils.config import load_yaml_config
 from utils.logging import StructuredLogger, setup_logging
+from news.ticker_extractor import TickerExtractor
 
 
 class NewsFetcher:
@@ -26,6 +27,7 @@ class NewsFetcher:
         self.config = load_yaml_config('settings')
         self.rss_feeds = self.config.get('data', {}).get('news_sources', [])
         self.logger = logger or StructuredLogger(setup_logging(self.config.get('logging', {})))
+        self.ticker_extractor = TickerExtractor(self.logger)
     
     def fetch_all_feeds(self, hours_lookback: int = 24) -> List[Dict[str, Any]]:
         """
@@ -85,13 +87,23 @@ class NewsFetcher:
                 if pub_time and pub_time < cutoff_time:
                     continue
                 
+                headline = entry.get('title', 'No title')
+                content = entry.get('summary', entry.get('description', ''))
+                
+                # Extract tickers from headline and content
+                tickers = self.ticker_extractor.extract_tickers(
+                    f"{headline} {content}",
+                    use_llm=True  # Use LLM for accuracy
+                )
+                
                 item = {
-                    'headline': entry.get('title', 'No title'),
-                    'content': entry.get('summary', entry.get('description', '')),
+                    'headline': headline,
+                    'content': content,
                     'url': entry.get('link', ''),
                     'source': feed.feed.get('title', feed_url),
                     'published_at': pub_time or datetime.utcnow(),
-                    'feed_url': feed_url
+                    'feed_url': feed_url,
+                    'tickers': tickers if tickers else ['SPY']  # Default to SPY if no tickers found
                 }
                 items.append(item)
                 

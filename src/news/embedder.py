@@ -21,13 +21,14 @@ from utils.logging import StructuredLogger, setup_logging
 class NewsEmbedder:
     """Generates embeddings for news text using SentenceTransformer."""
 
-    def __init__(self, logger: StructuredLogger = None, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, logger: StructuredLogger = None, model_name: str = "all-mpnet-base-v2"):
         """
         Initialize embedder with a sentence transformer model.
 
         Args:
             logger: Optional structured logger (positional-safe)
             model_name: Name of the sentence-transformer model to use
+                        Default: all-mpnet-base-v2 (768-dim, matches pgvector schema)
         """
         self.config = load_yaml_config("settings")
         self.logger = logger or StructuredLogger(setup_logging(self.config.get("logging", {})))

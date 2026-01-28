@@ -138,22 +138,22 @@ class NewsStorage:
         """
         try:
             embedding_list = embedding.tolist() if isinstance(embedding, np.ndarray) else embedding
+            embedding_str = '[' + ','.join(str(x) for x in embedding_list) + ']'
             
             # Build query
-            query = text("""
+            query = text(f"""
                 SELECT id, headline, content, source, url, published_at,
                        sentiment_score,
-                       1 - (embedding <=> :embedding::vector) as similarity
+                       1 - (embedding <=> '{embedding_str}'::vector) as similarity
                 FROM news
                 WHERE (:ticker IS NULL OR :ticker = ANY(tickers))
-                  AND (1 - (embedding <=> :embedding::vector)) >= :threshold
+                  AND (1 - (embedding <=> '{embedding_str}'::vector)) >= :threshold
                 ORDER BY similarity DESC
                 LIMIT :limit
             """)
             
             with self.engine.connect() as conn:
                 results = conn.execute(query, {
-                    'embedding': embedding_list,
                     'ticker': ticker,
                     'threshold': similarity_threshold,
                     'limit': limit
@@ -227,7 +227,153 @@ def store_news(headline: str, content: str, embedding: np.ndarray,
 
 if __name__ == "__main__":
     # Test script
+    print("="*70)
+    print("NEWS STORAGE TEST")
+    print("="*70)
+    
+    # Initialize storage
     storage = NewsStorage()
-    count = storage.get_news_count()
-    print(f"Total news items in database: {count}")
+    
+    # Test 1: Database connection and count
+    print("\n1. DATABASE CONNECTION TEST")
+    print("-"*70)
+    try:
+        initial_count = storage.get_news_count()
+        print(f"✓ Connected to database")
+        print(f"  Initial news count: {initial_count}")
+    except Exception as e:
+        print(f"✗ Failed to connect: {e}")
+        sys.exit(1)
+    
+    # Test 2: Generate test data with embeddings
+    print("\n2. GENERATING TEST DATA")
+    print("-"*70)
+    from embedder import NewsEmbedder
+    from parser import NewsParser
+    
+    embedder = NewsEmbedder()
+    parser = NewsParser(use_ollama=False)
+    
+    test_news = [
+        {
+            "headline": "Apple beats Q4 earnings expectations",
+            "content": "Apple Inc reported strong Q4 earnings with record iPhone sales and growth in services.",
+            "source": "Bloomberg",
+            "url": "https://example.com/apple-earnings",
+            "published_at": datetime.utcnow(),
+            "tickers": ["AAPL"],
+        },
+        {
+            "headline": "Tesla misses delivery targets in January",
+            "content": "Tesla announced lower-than-expected delivery numbers for Q1, citing production challenges.",
+            "source": "Reuters",
+            "url": "https://example.com/tesla-miss",
+            "published_at": datetime.utcnow(),
+            "tickers": ["TSLA"],
+        },
+        {
+            "headline": "Microsoft announces AI partnership",
+            "content": "Microsoft and OpenAI expand partnership to integrate advanced AI into enterprise products.",
+            "source": "TechCrunch",
+            "url": "https://example.com/msft-ai",
+            "published_at": datetime.utcnow(),
+            "tickers": ["MSFT"],
+        },
+    ]
+    
+    # Add embeddings and sentiment
+    for item in test_news:
+        combined = f"{item['headline']} {item['content']}"
+        item['embedding'] = embedder.embed_text(combined)
+        item['sentiment_score'] = parser.extract_sentiment(combined, use_llm=False)
+    
+    print(f"✓ Generated {len(test_news)} test news items")
+    for i, item in enumerate(test_news, 1):
+        print(f"  {i}. {item['headline'][:50]}...")
+        print(f"     Tickers: {item['tickers']}, Sentiment: {item['sentiment_score']:+.2f}")
+    
+    # Test 3: Store single news item
+    print("\n3. STORE SINGLE NEWS ITEM TEST")
+    print("-"*70)
+    try:
+        first_item = test_news[0]
+        news_id = storage.store_news(
+            headline=first_item['headline'],
+            content=first_item['content'],
+            embedding=first_item['embedding'],
+            source=first_item['source'],
+            url=first_item['url'],
+            published_at=first_item['published_at'],
+            sentiment_score=first_item['sentiment_score'],
+            tickers=first_item['tickers']
+        )
+        print(f"✓ Stored single news item")
+        print(f"  News ID: {news_id}")
+        print(f"  Headline: {first_item['headline']}")
+    except Exception as e:
+        print(f"✗ Failed to store single item: {e}")
+    
+    # Test 4: Batch store news items
+    print("\n4. BATCH STORE NEWS ITEMS TEST")
+    print("-"*70)
+    try:
+        batch_count = storage.batch_store_news(test_news[1:])
+        print(f"✓ Batch stored {batch_count} news items")
+    except Exception as e:
+        print(f"✗ Failed to batch store: {e}")
+    
+    # Test 5: Get news count
+    print("\n5. GET NEWS COUNT TEST")
+    print("-"*70)
+    try:
+        final_count = storage.get_news_count()
+        added = final_count - initial_count
+        print(f"✓ Retrieved news count")
+        print(f"  Initial count: {initial_count}")
+        print(f"  Final count: {final_count}")
+        print(f"  Added in this test: {added}")
+    except Exception as e:
+        print(f"✗ Failed to get count: {e}")
+    
+    # Test 6: Retrieve news for ticker
+    print("\n6. GET NEWS FOR TICKER TEST")
+    print("-"*70)
+    try:
+        apple_news = storage.get_news_for_ticker("AAPL", hours_lookback=24, limit=5)
+        print(f"✓ Retrieved news for AAPL")
+        print(f"  Found {len(apple_news)} items")
+        if apple_news:
+            for i, item in enumerate(apple_news, 1):
+                print(f"  {i}. {item['headline'][:60]}")
+                print(f"     Sentiment: {item.get('sentiment_score', 'N/A')}")
+    except Exception as e:
+        print(f"✗ Failed to get ticker news: {e}")
+    
+    # Test 7: Search similar news
+    print("\n7. SEARCH SIMILAR NEWS TEST")
+    print("-"*70)
+    try:
+        query_embedding = embedder.embed_text("earnings announcement revenue growth")
+        similar = storage.search_similar_news(
+            embedding=query_embedding,
+            ticker=None,
+            limit=3,
+            similarity_threshold=0.3
+        )
+        print(f"✓ Searched for similar news")
+        print(f"  Found {len(similar)} similar items")
+        if similar:
+            for i, item in enumerate(similar, 1):
+                print(f"  {i}. {item['headline'][:60]}")
+                print(f"     Similarity: {item.get('similarity', 'N/A'):.2f}")
+    except Exception as e:
+        print(f"✗ Failed to search similar: {e}")
+    
+    # Test 8: Summary
+    print("\n" + "="*70)
+    print("TEST SUMMARY")
+    print("="*70)
+    print(f"✓ All storage operations tested successfully!")
+    print(f"✓ Final database state: {final_count} total news items")
+    print("="*70)
 

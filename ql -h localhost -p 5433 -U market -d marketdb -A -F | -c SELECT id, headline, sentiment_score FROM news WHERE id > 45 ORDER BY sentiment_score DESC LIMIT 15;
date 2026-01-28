@@ -1,0 +1,19 @@
+ id  |                                              headline                                              | tickers |  sentiment_score   
+-----+----------------------------------------------------------------------------------------------------+---------+--------------------
+  59 | Mortgage and refinance interest rates today, January 27, 2026: Under 6% again                      | {AAPL}  |                  1
+  61 | Technical Assessment: Bullish in the Intermediate-Term                                             | {AAPL}  |                  1
+  57 | Tom Lee Claims Parabolic Gold and Silver Move Is Masking Bullish Bitcoin and Ethereum Signals      | {AAPL}  |                  1
+  47 | Are Wall Street Analysts Bullish on Advanced Micro Devices Stock?                                  | {TSLA}  |                  1
+  46 | Strategy buys $264m Bitcoin during price dip as investors brace for 80% government shutdown chance | {AAPL}  |                  1
+  97 | Analysts See Strong Production Growth for Vista Energy (VIST)                                      | {AAPL}  | 0.9377379128709435
+  91 | Double-digit Revenue Growth Till 2030 Drives BioMarin’s (BMRN) Bullish Thesis                      | {TSLA}  | 0.9249933045357466
+  81 | Salesforce (CRM) Gained on Several Fronts                                                          | {TSLA}  | 0.9233638681471348
+ 102 | Best CD rates today, January 27, 2026: Lock in up to 4% APY today                                  | {AAPL}  | 0.9000209076330066
+  67 | GM Expects Profit Growth, Plans $6 Billion in Buybacks                                             | {AAPL}  |  0.887598754838109
+  82 | A Mix of Bullish Forces Boosted Alphabet (GOOG)                                                    | {GOOGL} | 0.8348377533257008
+  69 | Northrop Grumman posts higher quarterly profit as geopolitical uncertainty fuels demand            | {AAPL}  | 0.7919953912496567
+ 109 | The leadership advantage Wall Street keeps rewarding                                               | {AAPL}  | 0.7616034308448434
+  95 | Analysts Expect Upside in Melco Resorts (MLCO) Despite Gaming Revenue Growth Slowdown              | {TSLA}  | 0.7575663849711418
+ 108 | Technical Assessment: Bullish in the Intermediate-Term                                             | {AAPL}  | 0.7272849231958389
+(15 rows)
+

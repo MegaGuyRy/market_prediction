@@ -19,18 +19,37 @@ from utils.logging import StructuredLogger, setup_logging
 class NewsParser:
     """Parse news items for sentiment and novelty."""
     
-    def __init__(self, logger: StructuredLogger = None, use_ollama: bool = True):
+    def __init__(self, logger: StructuredLogger = None, use_ollama: bool = True, use_finbert: bool = True):
         """
         Initialize news parser.
         
         Args:
             logger: StructuredLogger instance
-            use_ollama: Whether to use Ollama for sentiment (else simple heuristics)
+            use_ollama: Whether to use Ollama for sentiment
+            use_finbert: Whether to use FinBERT for financial sentiment (recommended)
         """
         self.config = load_yaml_config('settings')
         self.logger = logger or StructuredLogger(setup_logging(self.config.get('logging', {})))
         
         self.use_ollama = use_ollama
+        self.use_finbert = use_finbert
+        self.finbert_model = None
+        self.finbert_tokenizer = None
+        
+        # Initialize FinBERT if requested
+        if self.use_finbert:
+            try:
+                from transformers import AutoModelForSequenceClassification, AutoTokenizer
+                model_name = "ProsusAI/finbert"
+                self.logger.info("Loading FinBERT model for financial sentiment analysis")
+                self.finbert_tokenizer = AutoTokenizer.from_pretrained(model_name)
+                self.finbert_model = AutoModelForSequenceClassification.from_pretrained(model_name)
+                self.logger.info("FinBERT model loaded successfully", model=model_name)
+            except Exception as e:
+                self.logger.warning(f"FinBERT not available: {e}. Falling back to alternatives.")
+                self.use_finbert = False
+        
+        # Initialize Ollama if requested
         if self.use_ollama:
             try:
                 import requests
@@ -38,32 +57,92 @@ class NewsParser:
                 self.requests = requests
                 self.logger.info("News parser initialized with Ollama", url=self.ollama_url)
             except Exception as e:
-                self.logger.warning(f"Ollama not available, using heuristics: {e}")
+                self.logger.warning(f"Ollama not available, will use FinBERT or heuristics: {e}")
                 self.use_ollama = False
     
     def extract_sentiment(self, text: str, use_llm: bool = None) -> float:
         """
-        Extract sentiment score from text.
+        Extract sentiment score from text using hybrid approach.
+        
+        Priority: FinBERT → LLM (Ollama) → Heuristic
         
         Args:
             text: Text to analyze
-            use_llm: Override use_ollama setting for this call
+            use_llm: Override method selection (True=LLM, False=FinBERT)
         
         Returns:
             Sentiment score from -1 (very bearish) to +1 (very bullish)
         """
         try:
-            if use_llm is None:
-                use_llm = self.use_ollama
+            # Try FinBERT first (most accurate for financial text)
+            if self.use_finbert and self.finbert_model:
+                sentiment = self._extract_sentiment_finbert(text)
+                if sentiment is not None:
+                    return sentiment
             
-            if use_llm:
-                return self._extract_sentiment_ollama(text)
-            else:
-                return self._extract_sentiment_heuristic(text)
+            # Fall back to LLM if FinBERT unavailable
+            if use_llm and self.use_ollama:
+                sentiment = self._extract_sentiment_ollama(text)
+                if sentiment is not None:
+                    return sentiment
+            
+            # Last resort: heuristics
+            return self._extract_sentiment_heuristic(text)
                 
         except Exception as e:
             self.logger.warning(f"Failed to extract sentiment: {e}")
             return 0.0
+    
+    def _extract_sentiment_finbert(self, text: str) -> float:
+        """
+        Extract sentiment using FinBERT (financial BERT).
+        Most accurate for financial news.
+        """
+        try:
+            import torch
+            
+            # Truncate to avoid token limits
+            text_truncated = text[:512]
+            
+            # Tokenize
+            inputs = self.finbert_tokenizer(
+                text_truncated,
+                return_tensors="pt",
+                truncation=True,
+                max_length=512
+            )
+            
+            # Get predictions
+            with torch.no_grad():
+                outputs = self.finbert_model(**inputs)
+            
+            # Get logits and convert to probabilities
+            logits = outputs.logits
+            probs = torch.softmax(logits, dim=-1)
+            
+            # FinBERT output classes: [0=positive, 1=negative, 2=neutral]
+            # Map to -1 to +1 scale
+            pos_score = probs[0][0].item()  # probability of positive (class 0)
+            neg_score = probs[0][1].item()  # probability of negative (class 1)
+            neu_score = probs[0][2].item()  # probability of neutral (class 2)
+            
+            # Calculate sentiment: positive reduces to +1, negative to -1, neutral to 0
+            sentiment = pos_score - neg_score
+            
+            self.logger.debug(
+                f"FinBERT sentiment",
+                text_preview=text_truncated[:50],
+                positive=f"{pos_score:.2f}",
+                negative=f"{neg_score:.2f}",
+                neutral=f"{neu_score:.2f}",
+                sentiment=f"{sentiment:.2f}"
+            )
+            
+            return float(sentiment)
+            
+        except Exception as e:
+            self.logger.debug(f"FinBERT extraction failed: {e}")
+            return None
     
     def _extract_sentiment_ollama(self, text: str) -> float:
         """Extract sentiment using Ollama LLM."""
@@ -108,15 +187,14 @@ Response format: {{"sentiment": <float>}}"""
                 except (json.JSONDecodeError, ValueError):
                     pass
             
-            # Fallback to heuristic if LLM fails
-            return self._extract_sentiment_heuristic(text)
+            return None
             
         except Exception as e:
             self.logger.debug(f"Ollama sentiment extraction failed: {e}")
-            return self._extract_sentiment_heuristic(text)
+            return None
     
     def _extract_sentiment_heuristic(self, text: str) -> float:
-        """Extract sentiment using keyword heuristics."""
+        """Extract sentiment using keyword heuristics (fallback only)."""
         text_lower = text.lower()
         
         # Bullish indicators
